@@ -1,0 +1,25 @@
+set_languages("c++20")
+add_rules("mode.debug", "mode.release")
+
+add_requires("vulkansdk","glfw","glm")
+
+-- includes("thirdparty")
+includes("rlib")
+-- includes("test")
+includes("vk")
+includes("mesh")
+includes("util")
+includes("vk_win")
+
+target("engine")
+    set_kind("static")
+    add_files("engine.cpp")
+    add_deps("vk","vk_win","mesh")
+    add_packages("vulkansdk","glfw","glm")
+target_end()
+
+target("main")
+    add_files("main.cpp")
+    add_deps("engine","mesh")
+    set_rundir(".")
+target_end()

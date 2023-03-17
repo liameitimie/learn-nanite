@@ -1,0 +1,16 @@
+{
+    recheck = false,
+    options = {
+        mode = "debug",
+        arch = "x64",
+        plat = "windows"
+    },
+    mtimes = {
+        ["util\\xmake.lua"] = 1678948749,
+        ["vk_win\\xmake.lua"] = 1678972123,
+        ["vk\\xmake.lua"] = 1678972142,
+        ["xmake.lua"] = 1678962870,
+        ["rlib\\xmake.lua"] = 1678590730,
+        ["mesh\\xmake.lua"] = 1679005010
+    }
+}

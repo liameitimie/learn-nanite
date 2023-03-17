@@ -1,0 +1,55 @@
+{
+    glm = {
+        __enabled = true,
+        sysincludedirs = [[C:\Users\Liameitimie\AppData\Local\.xmake\packages\g\glm\0.9.9+8\8335bab7c0314ab9921440de58961aac\include]],
+        version = "0.9.9+8",
+        envs = {
+            PATH = {
+                [[C:\Users\Liameitimie\AppData\Local\.xmake\packages\g\glm\0.9.9+8\8335bab7c0314ab9921440de58961aac\bin]]
+            }
+        },
+        __requirestr = "glm",
+        installdir = [[C:\Users\Liameitimie\AppData\Local\.xmake\packages\g\glm\0.9.9+8\8335bab7c0314ab9921440de58961aac]]
+    },
+    glfw = {
+        syslinks = {
+            "user32",
+            "shell32",
+            "gdi32"
+        },
+        envs = {
+            PATH = {
+                [[C:\Users\Liameitimie\AppData\Local\.xmake\packages\g\glfw\3.3.8\d12e591897c9472fb7d3725fa5811388\bin]],
+                [[C:\Users\Liameitimie\AppData\Local\.xmake\packages\c\cmake\3.24.2\5430022e3acc47008f94857b498c53c6\bin]],
+                [[C:\Users\Liameitimie\AppData\Local\.xmake\packages\o\opengl\latest\8574311f4b544fa89a3d8c3ee79d1929\bin]]
+            }
+        },
+        sysincludedirs = [[C:\Users\Liameitimie\AppData\Local\.xmake\packages\g\glfw\3.3.8\d12e591897c9472fb7d3725fa5811388\include]],
+        __requirestr = "glfw",
+        linkdirs = [[C:\Users\Liameitimie\AppData\Local\.xmake\packages\g\glfw\3.3.8\d12e591897c9472fb7d3725fa5811388\lib]],
+        __enabled = true,
+        installdir = [[C:\Users\Liameitimie\AppData\Local\.xmake\packages\g\glfw\3.3.8\d12e591897c9472fb7d3725fa5811388]],
+        version = "3.3.8",
+        static = true,
+        license = "zlib",
+        libfiles = [[C:\Users\Liameitimie\AppData\Local\.xmake\packages\g\glfw\3.3.8\d12e591897c9472fb7d3725fa5811388\lib\glfw3.lib]],
+        links = {
+            "glfw3",
+            "opengl32"
+        },
+        defines = "GLFW_INCLUDE_NONE"
+    },
+    vulkansdk = {
+        __enabled = true,
+        sysincludedirs = [[C:\VulkanSDK\1.3.231.1\include]],
+        envs = {
+            PATH = {
+                [[C:\Users\Liameitimie\AppData\Local\.xmake\packages\v\vulkansdk\latest\420de9336b0b4087866a20d820e950e6\bin]],
+                [[C:\VulkanSDK\1.3.231.1\bin]]
+            }
+        },
+        links = "vulkan-1",
+        __requirestr = "vulkansdk",
+        linkdirs = [[C:\VulkanSDK\1.3.231.1\lib]]
+    }
+}
