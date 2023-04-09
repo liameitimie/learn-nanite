@@ -102,8 +102,9 @@ public:
     void calc_tri_quadric(u32 tri_idx);
     void gather_adj_tris(vec3 p,vector<u32>& tris,bool& lock);
     f32 evaluate(vec3 p0,vec3 p1,bool merge);
-    virtual void lock_position(vec3 p) final;
-    virtual void simplify(u32 target_num_tri) final;
+    void lock_position(vec3 p);
+    // bool is_position_locked(vec3 p);
+    void simplify(u32 target_num_tri);
     void compact();
 
     void begin_merge(vec3 p);
@@ -147,6 +148,16 @@ void MeshSimplifierImpl::lock_position(vec3 p){
         }
     }
 }
+
+// bool MeshSimplifierImpl::is_position_locked(vec3 p){
+//     for(u32 i:corner_ht[hash(p)]){
+//         if(verts[indexes[i]]==p){
+//             if(flags[i]&LockMask) return true;
+//             else return false;
+//         }
+//     }
+//     return false;
+// }
 
 bool MeshSimplifierImpl::add_edge_ht(vec3& p0,vec3& p1,u32 idx){
     u32 h0=hash(p0),h1=hash(p1);
@@ -454,11 +465,15 @@ MeshSimplifier::~MeshSimplifier(){
 }
 
 void MeshSimplifier::lock_position(vec3 p){
-    impl->lock_position(p);
+    ((MeshSimplifierImpl*)impl)->lock_position(p);
 }
 
+// bool MeshSimplifier::is_position_locked(vec3 p){
+//     return ((MeshSimplifierImpl*)impl)->is_position_locked(p);
+// }
+
 void MeshSimplifier::simplify(u32 target_num_tri){
-    impl->simplify(target_num_tri);
+    ((MeshSimplifierImpl*)impl)->simplify(target_num_tri);
 }
 
 u32 MeshSimplifier::remaining_num_vert(){

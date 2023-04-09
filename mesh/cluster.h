@@ -21,7 +21,7 @@ struct Cluster{
 
 struct ClusterGroup{
     static const u32 min_group_size=8;
-    static const u32 max_group_size=16;
+    static const u32 max_group_size=32;
 
     Sphere bounds;
     Sphere lod_bounds;
@@ -42,7 +42,8 @@ void group_clusters(
     std::vector<Cluster>& clusters,
     u32 offset,
     u32 num_cluster,
-    std::vector<ClusterGroup>& cluster_groups
+    std::vector<ClusterGroup>& cluster_groups,
+    u32 mip_level
 );
 
 void build_parent_clusters(

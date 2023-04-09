@@ -122,6 +122,8 @@ void cluster_triangles(
     for(auto[l,r]:partitioner.ranges){
         clusters.push_back({});
         Cluster& cluster=clusters.back();
+        cluster.mip_level=0;
+
         unordered_map<u32,u32> mp;
         for(u32 i=l;i<r;i++){
             u32 t_idx=partitioner.node_id[i];
@@ -198,7 +200,8 @@ void group_clusters(
     vector<Cluster>& clusters,
     u32 offset,
     u32 num_cluster,
-    vector<ClusterGroup>& cluster_groups
+    vector<ClusterGroup>& cluster_groups,
+    u32 mip_level
 ){
     span<const Cluster> clusters_view(clusters.begin()+offset,num_cluster);
 
@@ -208,6 +211,7 @@ void group_clusters(
     vector<pair<u32,u32>> ext_edges;
     u32 i=0;
     for(auto& cluster:clusters_view){
+        assert(cluster.mip_level==mip_level);
         mp1.push_back(mp.size());
         for(u32 e:cluster.external_edges){
             ext_edges.push_back({i,e});
@@ -226,6 +230,8 @@ void group_clusters(
     for(auto [l,r]:partitioner.ranges){
         cluster_groups.push_back({});
         auto& group=cluster_groups.back();
+        group.mip_level=mip_level;
+
         for(u32 i=l;i<r;i++){
             u32 c_id=partitioner.node_id[i];
             clusters[c_id+offset].group_id=cluster_groups.size()-1;
@@ -254,18 +260,80 @@ void build_parent_clusters(
 ){
     vector<vec3> pos;
     vector<u32> idx;
+    u32 i_ofs=0;
     for(u32 c:cluster_group.clusters){
         auto& cluster=clusters[c];
         for(vec3 p:cluster.verts) pos.push_back(p);
-        for(u32 i:cluster.indexes) idx.push_back(i);
+        for(u32 i:cluster.indexes) idx.push_back(i+i_ofs);
+        i_ofs+=cluster.verts.size();
     }
 
     MeshSimplifier simplifier(pos.data(),pos.size(),idx.data(),idx.size());
+    HashTable edge_ht(cluster_group.external_edges.size());
+    u32 i=0;
+
     for(auto [c,e]:cluster_group.external_edges){
-        auto& p=clusters[c].verts;
-        auto& i=clusters[c].indexes;
-        simplifier.lock_position(p[i[e]]);
-        simplifier.lock_position(p[i[cycle3(e)]]);
+        auto& pos=clusters[c].verts;
+        auto& idx=clusters[c].indexes;
+        vec3 p0=pos[idx[e]],p1=pos[idx[cycle3(e)]];
+        edge_ht.add(::hash({p0,p1}),i);
+        simplifier.lock_position(p0);
+        simplifier.lock_position(p1);
+        i++;
     }
-    simplifier.simplify(Cluster::cluster_size/2*cluster_group.clusters.size());
+
+    simplifier.simplify((Cluster::cluster_size-2)*(cluster_group.clusters.size()/2));
+    pos.resize(simplifier.remaining_num_vert());
+    idx.resize(simplifier.remaining_num_tri()*3);
+
+    Graph edge_link,graph;
+    build_adjacency_edge_link(pos,idx,edge_link);
+    build_adjacency_graph(edge_link,graph);
+
+    Partitioner partitioner;
+    partitioner.partition(graph,Cluster::cluster_size-4,Cluster::cluster_size);
+
+    for(auto[l,r]:partitioner.ranges){
+        clusters.push_back({});
+        Cluster& cluster=clusters.back();
+        cluster.mip_level=cluster_group.mip_level+1;
+
+        unordered_map<u32,u32> mp;
+        for(u32 i=l;i<r;i++){
+            u32 t_idx=partitioner.node_id[i];
+            for(u32 k=0;k<3;k++){
+                u32 e_idx=t_idx*3+k;
+                u32 v_idx=idx[e_idx];
+                if(mp.find(v_idx)==mp.end()){ //重映射顶点下标
+                    mp[v_idx]=cluster.verts.size();
+                    cluster.verts.push_back(pos[v_idx]);
+                }
+                bool is_external=false;
+                for(auto[adj_edge,_]:edge_link.g[e_idx]){
+                    u32 adj_tri=partitioner.sort_to[adj_edge/3];
+                    if(adj_tri<l||adj_tri>=r){ //出点在不同划分说明是边界
+                        is_external=true;
+                        break;
+                    }
+                }
+                vec3 p0=pos[v_idx],p1=pos[idx[cycle3(e_idx)]]; //
+                if(!is_external){
+                    for(u32 j:edge_ht[::hash({p0,p1})]){
+                        auto [c,e]=cluster_group.external_edges[j];
+                        auto& pos=clusters[c].verts;
+                        auto& idx=clusters[c].indexes;
+                        if(p0==pos[idx[e]]&&p1==pos[idx[cycle3(e)]]){
+                            is_external=true;
+                            break;
+                        }
+                    }
+                }
+                
+                if(is_external){
+                    cluster.external_edges.push_back(cluster.indexes.size());
+                }
+                cluster.indexes.push_back(mp[v_idx]);
+            }
+        }
+    }
 }

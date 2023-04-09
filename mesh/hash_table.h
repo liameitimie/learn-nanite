@@ -100,7 +100,8 @@ public:
     };
 
     Container operator[](u32 key){
+        if(hash_size==0||index_size==0) return Container{~0u,nullptr};
         key&=hash_mask;
-        return {Container{hash[key],next_index}};
+        return Container{hash[key],next_index};
     }
 };

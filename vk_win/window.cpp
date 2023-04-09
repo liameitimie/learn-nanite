@@ -5,10 +5,16 @@
 
 namespace vk_win{
 
+struct WindowContext{
+    u32 key_state[26]={0};
+    bool is_key_trans[26]={0};
+};
+
 Window Window::create(u32 width,u32 height,const char* name){
     Window window{};
     window.width=width;
     window.height=height;
+    window.context=new WindowContext;
 
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API,GLFW_NO_API);
@@ -29,18 +35,24 @@ bool Window::should_close(){
 }
 void Window::poll_events(){
     glfwPollEvents();
+    for(u32 i=0;i<26;i++){
+        int state=glfwGetKey((GLFWwindow*)handle,'A'+i);
+        context->is_key_trans[i]=context->key_state[i]!=state;
+        context->key_state[i]=state;
+    }
 }
 
 bool Window::is_key_down(char c){
-    int state=glfwGetKey((GLFWwindow*)handle,c);
-    return state==GLFW_PRESS||state==GLFW_REPEAT;
+    return context->key_state[c-'A']==GLFW_PRESS;
 }
 
-bool Window::is_key_press(char c){
-    int state=glfwGetKey((GLFWwindow*)handle,c);
-    return state==GLFW_PRESS;
+bool Window::is_key_begin_press(char c){
+    return context->is_key_trans[c-'A']&&context->key_state[c-'A']==GLFW_PRESS;
 }
 
+bool Window::is_key_begin_release(char c){
+    return context->is_key_trans[c-'A']&&context->key_state[c-'A']==GLFW_RELEASE;
+}
 
 dvec2 Window::get_cursor_pos(){
     dvec2 p;
