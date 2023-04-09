@@ -29,6 +29,10 @@ vk、vk_win文件夹：vulkan与window的简单封装
 
 实现一个简易的viewer程序,在program/viewer内，
 
-用wasd进行移动，jk切换显示模式(triangle id、cluster id、group id)
+用w,a,s,d进行移动
+
+j,k切换显示模式(triangle id、cluster id、group id)
+
+u,i切换mip_level
 
 长按b显示鼠标、移动鼠标转换镜头
