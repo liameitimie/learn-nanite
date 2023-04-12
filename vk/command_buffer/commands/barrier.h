@@ -1,6 +1,7 @@
 #pragma once
 #include "../../image/image.h"
 #include "../../image/layout.h"
+#include "../../buffer/buffer.h"
 #include <vector>
 
 namespace vk{
@@ -77,7 +78,16 @@ struct ImageBarrier{
     ImageLayout new_layout;
 };
 
+struct BufferBarrier{
+    Buffer buffer;
+    u32 src_stage;
+    AccessFlag src_access;
+    u32 dst_stage;
+    AccessFlag dst_access;
+};
+
 struct Dependency{
+    std::vector<BufferBarrier> buffer_barriers;
     std::vector<ImageBarrier> image_barriers;
 };
 

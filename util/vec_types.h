@@ -28,6 +28,9 @@ struct vec3{
     bool operator==(const vec3& b)const{
         return x==b.x&&y==b.y&&z==b.z;
     }
+    f32& operator[](u32 i){
+        return ((f32*)this)[i];
+    }
 };
 
 struct dvec3{

@@ -20,8 +20,8 @@ struct Cluster{
 };
 
 struct ClusterGroup{
-    static const u32 min_group_size=8;
-    static const u32 max_group_size=32;
+    // static const u32 min_group_size=8;
+    static const u32 group_size=32;
 
     Sphere bounds;
     Sphere lod_bounds;

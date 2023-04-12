@@ -61,5 +61,6 @@ struct Buffer{
     void update(void* p,u64 size);
 };
 
+void read_from_buffer(void* p,Buffer buffer,u64 size);
 
 }

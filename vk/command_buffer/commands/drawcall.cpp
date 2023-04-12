@@ -24,4 +24,12 @@ void draw_indexed(
     vkCmdDrawIndexed((VkCommandBuffer)cmd,index_count,instance_count,first_vertex,vertex_offset,first_instance);
 }
 
+void dispatch(u64 cmd,u32 x,u32 y,u32 z){
+    vkCmdDispatch((VkCommandBuffer)cmd,x,y,z);
+}
+
+void draw_indirect(u64 cmd,Buffer buffer){
+    vkCmdDrawIndirect((VkCommandBuffer)cmd,(VkBuffer)buffer.handle,0,1,4*sizeof(u32));
+}
+
 }

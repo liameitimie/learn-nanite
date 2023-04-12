@@ -1,5 +1,6 @@
 #pragma once
 #include <types.h>
+#include "../../buffer/buffer.h"
 
 namespace vk{
 
@@ -26,5 +27,8 @@ void draw_indexed(
     u32 first_instance
 );
 
+void dispatch(u64 cmd,u32 x,u32 y,u32 z);
+
+void draw_indirect(u64 cmd,Buffer buffer);
 
 }

@@ -1,5 +1,5 @@
 #include "cluster.h"
-#include "mesh_simplify.h"
+#include <mesh_simplify.h>
 #include "partitioner.h"
 #include "hash_table.h"
 #include "mesh_util.h"
@@ -117,12 +117,10 @@ void cluster_triangles(
     Partitioner partitioner;
     partitioner.partition(graph,Cluster::cluster_size-4,Cluster::cluster_size);
 
-    // todo: 包围盒计算
     // 根据划分结果构建clusters
     for(auto[l,r]:partitioner.ranges){
         clusters.push_back({});
         Cluster& cluster=clusters.back();
-        cluster.mip_level=0;
 
         unordered_map<u32,u32> mp;
         for(u32 i=l;i<r;i++){
@@ -148,6 +146,13 @@ void cluster_triangles(
                 cluster.indexes.push_back(mp[v_idx]);
             }
         }
+
+        cluster.mip_level=0;
+        cluster.lod_error=0;
+        cluster.sphere_bounds=Sphere::from_points(cluster.verts.data(),cluster.verts.size());
+        cluster.lod_bounds=cluster.sphere_bounds;
+        cluster.box_bounds=cluster.verts[0];
+        for(vec3 p:cluster.verts) cluster.box_bounds=cluster.box_bounds+p;
     }
 }
 
@@ -224,7 +229,7 @@ void group_clusters(
     build_clusters_graph(edge_link,mp,num_cluster,graph);
 
     Partitioner partitioner;
-    partitioner.partition(graph,ClusterGroup::min_group_size,ClusterGroup::max_group_size);
+    partitioner.partition(graph,ClusterGroup::group_size-4,ClusterGroup::group_size);
 
     //todo: 包围盒
     for(auto [l,r]:partitioner.ranges){
@@ -260,13 +265,18 @@ void build_parent_clusters(
 ){
     vector<vec3> pos;
     vector<u32> idx;
+    vector<Sphere> lod_bounds;
+    f32 max_parent_lod_error=0;
     u32 i_ofs=0;
     for(u32 c:cluster_group.clusters){
         auto& cluster=clusters[c];
         for(vec3 p:cluster.verts) pos.push_back(p);
         for(u32 i:cluster.indexes) idx.push_back(i+i_ofs);
         i_ofs+=cluster.verts.size();
+        lod_bounds.push_back(cluster.lod_bounds);
+        max_parent_lod_error=max(max_parent_lod_error,cluster.lod_error); //强制父节点的error大于等于子节点
     }
+    Sphere parent_lod_bound=Sphere::from_spheres(lod_bounds.data(),lod_bounds.size());
 
     MeshSimplifier simplifier(pos.data(),pos.size(),idx.data(),idx.size());
     HashTable edge_ht(cluster_group.external_edges.size());
@@ -286,6 +296,8 @@ void build_parent_clusters(
     pos.resize(simplifier.remaining_num_vert());
     idx.resize(simplifier.remaining_num_tri()*3);
 
+    max_parent_lod_error=max(max_parent_lod_error,sqrt(simplifier.max_error()));
+
     Graph edge_link,graph;
     build_adjacency_edge_link(pos,idx,edge_link);
     build_adjacency_graph(edge_link,graph);
@@ -296,7 +308,6 @@ void build_parent_clusters(
     for(auto[l,r]:partitioner.ranges){
         clusters.push_back({});
         Cluster& cluster=clusters.back();
-        cluster.mip_level=cluster_group.mip_level+1;
 
         unordered_map<u32,u32> mp;
         for(u32 i=l;i<r;i++){
@@ -335,5 +346,15 @@ void build_parent_clusters(
                 cluster.indexes.push_back(mp[v_idx]);
             }
         }
+
+        cluster.mip_level=cluster_group.mip_level+1;
+        cluster.sphere_bounds=Sphere::from_points(cluster.verts.data(),cluster.verts.size());
+        //强制父节点的lod包围盒覆盖所有子节点lod包围盒
+        cluster.lod_bounds=parent_lod_bound;
+        cluster.lod_error=max_parent_lod_error;
+        cluster.box_bounds=cluster.verts[0];
+        for(vec3 p:cluster.verts) cluster.box_bounds=cluster.box_bounds+p;
     }
+    cluster_group.lod_bounds=parent_lod_bound;
+    cluster_group.max_parent_lod_error=max_parent_lod_error;
 }

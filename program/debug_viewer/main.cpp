@@ -1,15 +1,14 @@
-#include <algorithm>
-#include <type_traits>
 #include <vk.h>
 #include <window.h>
 #include <mesh.h>
 #include <mesh_simplify.h>
+#include <virtual_mesh.h>
 #include <vector>
-#include <chrono>
 #include "camera.h"
 #include <cluster.h>
 #include <fmt/core.h>
 #include <assert.h>
+#include <timer.h>
 
 using namespace std;
 using namespace vk;
@@ -17,23 +16,6 @@ using namespace vk_win;
 
 const u32 width=1920;
 const u32 height=1080;
-
-using namespace std::chrono;
-class Timer{
-public:
-    Timer(){
-        reset();
-    }
-    void reset(){
-        start = high_resolution_clock::now();
-    }
-    long long us(){
-    //当前时钟减去开始时钟的count
-        return duration_cast<microseconds>(high_resolution_clock::now() - start).count();
-    }
-private:
-    time_point<high_resolution_clock> start;
-};
 
 u32 as_uint(f32 x){
     return *((u32*)&x);
@@ -45,121 +27,11 @@ int main(){
     timer.reset();
     fmt::print("loading mesh: ");
     Mesh mesh;
-    mesh.load("asset/Font_Reconstructed.stl");
+    mesh.load("../asset/Font_Reconstructed.stl");
     fmt::print("{} us\n",timer.us());
-    auto& [pos,idx]=mesh;
 
-    timer.reset();
-    fmt::print("simplifying: ");
-    //单纯去除重点
-    MeshSimplifier simplifier(pos.data(),pos.size(),idx.data(),idx.size());
-    simplifier.simplify(idx.size());
-    pos.resize(simplifier.remaining_num_vert());
-    idx.resize(simplifier.remaining_num_tri()*3);
-    fmt::print("{} us\n",timer.us());
-    fmt::print("verts: {}, tris: {}\n\n",pos.size(),idx.size()/3);
-
-    vector<Cluster> clusters;
-    vector<ClusterGroup> cluster_groups;
-
-    timer.reset();
-    fmt::print("clustering triangles: ");
-    cluster_triangles(pos,idx,clusters);
-    fmt::print("{} us\n\n",timer.us());
-    u32 level_offset=0,mip_level=0;
-
-    fmt::print("begin build virtual mesh\n\n");
-    while(1){
-        fmt::print("### level {} ###\n",mip_level);
-        fmt::print("num clusters: {}\n",clusters.size()-level_offset);
-
-        f32 maxsz=0,minsz=100000,avgsz=0;
-        for(u32 i=level_offset;i<clusters.size();i++){
-            auto& cluster=clusters[i];
-            assert(cluster.verts.size()<256);
-            f32 sz=cluster.indexes.size()/3.0;
-            if(sz>maxsz) maxsz=sz;
-            if(sz<minsz) minsz=sz;
-            avgsz+=sz;
-        }
-        avgsz/=clusters.size()-level_offset;
-        fmt::print("cluster size: max={}, min={}, avg={}\n",maxsz,minsz,avgsz);
-
-        u32 num_level_clusters=clusters.size()-level_offset;
-        if(num_level_clusters<=1) break;
-
-        u32 prev_cluster_num=clusters.size();
-        u32 prev_group_num=cluster_groups.size();
-
-        timer.reset();
-        fmt::print("groupinging clusters: ");
-        group_clusters(
-            clusters,
-            level_offset,
-            num_level_clusters,
-            cluster_groups,
-            mip_level
-        );
-        fmt::print("{} us\n",timer.us());
-        fmt::print("num groups: {}\n",cluster_groups.size()-prev_group_num);
-
-        timer.reset();
-        fmt::print("building parent clusters: ");
-        for(u32 i=prev_group_num;i<cluster_groups.size();i++){
-            build_parent_clusters(cluster_groups[i],clusters);
-        }
-        fmt::print("{} us\n",timer.us());
-
-        level_offset=prev_cluster_num;
-        mip_level++;
-
-        fmt::print("\n");
-    }
-    fmt::print("end build virtual mesh\n");
-    fmt::print("total clusters: {}\n\n",clusters.size());
-
-
-    // f32 maxsz=0,minsz=100000,avgsz=0;
-    // for(auto& cluster:clusters){
-    //     assert(cluster.verts.size()<256);
-    //     f32 sz=cluster.indexes.size()/3.0;
-    //     if(sz>maxsz) maxsz=sz;
-    //     if(sz<minsz) minsz=sz;
-    //     avgsz+=sz;
-    // }
-    // avgsz/=clusters.size();
-    // fmt::print("cluster size: max={}, min={}, avg={}\n\n",maxsz,minsz,avgsz);
-
-    // timer.reset();
-    // group_clusters(clusters,0,clusters.size(),cluster_groups,0);
-    // u32 prev_group_num=cluster_groups.size();
-    // fmt::print("level 0 num groups: {}\n",cluster_groups.size());
-    // fmt::print("group clusters in level 0: {} us\n\n",timer.us());
-
-    // timer.reset();
-    // for(auto& group:cluster_groups){
-    //     build_parent_clusters(group,clusters);
-    // }
-    // fmt::print("build parent clusters level0: {} us\n",timer.us());
-    // fmt::print("level 1 num clusters: {}\n",clusters.size()-level_offset);
-
-    // maxsz=0,minsz=100000,avgsz=0;
-    // for(u32 i=level_offset;i<clusters.size();i++){
-    //     auto& cluster=clusters[i];
-    //     assert(cluster.verts.size()<256);
-    //     f32 sz=cluster.indexes.size()/3.0;
-    //     if(sz>maxsz) maxsz=sz;
-    //     if(sz<minsz) minsz=sz;
-    //     avgsz+=sz;
-    // }
-    // avgsz/=clusters.size()-level_offset;
-    // fmt::print("cluster size: max={}, min={}, avg={}\n\n",maxsz,minsz,avgsz);
-
-    // timer.reset();
-    // group_clusters(clusters,level_offset,clusters.size()-level_offset,cluster_groups,1);
-    // fmt::print("level 1 num groups: {}\n",cluster_groups.size()-prev_group_num);
-    // fmt::print("group clusters in level 1: {} us\n\n",timer.us());
-
+    VirtualMesh vm;
+    vm.build(mesh);
 
     vk::init();
     Window window=Window::create(width,height,"virtual mesh viewer");
@@ -169,13 +41,18 @@ int main(){
     timer.reset();
     vector<Buffer> packed_clusters;
 
-    for(auto& cluster:clusters){
+    for(auto& cluster:vm.clusters){
         vector<u32> packed_data;
 
         packed_data.push_back(cluster.indexes.size()/3); // num_tri
         packed_data.push_back(cluster.verts.size()); // num_vert
         packed_data.push_back(cluster.group_id);
         packed_data.push_back(cluster.mip_level);
+
+        packed_data.push_back(as_uint(cluster.sphere_bounds.center.x));
+        packed_data.push_back(as_uint(cluster.sphere_bounds.center.y));
+        packed_data.push_back(as_uint(cluster.sphere_bounds.center.z));
+        packed_data.push_back(as_uint(cluster.sphere_bounds.radius));
 
         for(u32 i=0;i<cluster.indexes.size()/3;i++){ //tri data
             u32 i0=cluster.indexes[i*3];
@@ -219,6 +96,7 @@ int main(){
         mat4 vp_mat;
         u32 view_mode;// 0:tri 1:cluster 2:group
         u32 level;
+        u32 display_ext_edge;
     };
     vector<Buffer> frame_context_buffers(vk::num_swapchain_image());
     vector<pair<u32,u32>> id(vk::num_swapchain_image());
@@ -295,7 +173,7 @@ int main(){
             .push_constant(pipeline.pipeline_layout,8,&id[swapchain_idx])
             .bind_graphics_pipeline(pipeline.handle)
             .bind_descriptor_sets(PipelineBindPoint::Graphics,pipeline.pipeline_layout,vk::bindless_set())
-            .draw(128*3,clusters.size(),0,0)
+            .draw(128*3,vm.clusters.size(),0,0)
             .end_rendering()
             .pipeline_barrier(Dependency{
                 .image_barriers={ImageBarrier{
@@ -325,10 +203,10 @@ int main(){
 
     window.set_cursor_disabled();
     bool is_cursor_disabled=true;
-    bool is_key_downs[100];
     dvec2 lst_cursor_pos;
     u32 view_mode=0;
     u32 level=0;
+    u32 display_ext_edge=0;
 
     timer.reset();
 
@@ -343,11 +221,13 @@ int main(){
         if(window.is_key_down('A')) camera.move_right(-tick_time);
         if(window.is_key_down('D')) camera.move_right(tick_time);
 
-        if(window.is_key_begin_press('J')) view_mode=(view_mode+3-1)%3;
-        if(window.is_key_begin_press('K')) view_mode=(view_mode+1)%3;
+        if(window.is_key_begin_press('J')) view_mode=(view_mode+4-1)%4;
+        if(window.is_key_begin_press('K')) view_mode=(view_mode+1)%4;
 
-        if(window.is_key_begin_press('U')) level=(level+mip_level-1)%mip_level;
-        if(window.is_key_begin_press('I')) level=(level+1)%mip_level;
+        if(window.is_key_begin_press('U')) level=(level+vm.num_mip_level-1)%vm.num_mip_level;
+        if(window.is_key_begin_press('I')) level=(level+1)%vm.num_mip_level;
+
+        if(window.is_key_begin_press('L')) display_ext_edge^=1;
 
         if(window.is_key_begin_press('B')){
             window.set_cursor_normal();
@@ -358,35 +238,6 @@ int main(){
             window.set_cursor_disabled();
             is_cursor_disabled=true;
         }
-
-        // bool is_key_down=window.is_key_down('J');
-        // if(!is_key_downs['J']&&is_key_down){
-        //     view_mode=(view_mode+3-1)%3;
-        //     is_key_downs['J']=true;
-        // }
-        // if(is_key_downs['J']&&!is_key_down){
-        //     is_key_downs['J']=false;
-        // }
-
-        // is_key_down=window.is_key_down('K');
-        // if(!is_key_downs['K']&&is_key_down){
-        //     view_mode=(view_mode+1)%3;
-        //     is_key_downs['K']=true;
-        // }
-        // if(is_key_downs['K']&&!is_key_down){
-        //     is_key_downs['K']=false;
-        // }
-
-        // is_key_down=window.is_key_down('B');
-        // if(is_cursor_disabled&&is_key_down){
-        //     window.set_cursor_normal();
-        //     lst_cursor_pos=window.get_cursor_pos();
-        //     is_cursor_disabled=false;
-        // }
-        // if(!is_cursor_disabled&&!is_key_down){
-        //     window.set_cursor_disabled();
-        //     is_cursor_disabled=true;
-        // }
 
         dvec2 cursor_pos=window.get_cursor_pos();
         if(frame_cnt==0) lst_cursor_pos=cursor_pos;
@@ -402,7 +253,7 @@ int main(){
         vk::wait_for_fence(sync[frame_idx].cpu_wait_cmd);
         vk::reset_fence(sync[frame_idx].cpu_wait_cmd);
 
-        FrameContext frame_context{vp_mat,view_mode,level};
+        FrameContext frame_context{vp_mat,view_mode,level,display_ext_edge};
         frame_context_buffers[swapchain_idx].update(&frame_context,sizeof(FrameContext));
 
         vk::queue_submit(

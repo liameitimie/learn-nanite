@@ -188,6 +188,17 @@ namespace context{
             };
             VK_CHECK(vkAllocateDescriptorSets(device,&desc_set_info,&bindless_set));
         }
+        // {
+        //     VkPhysicalDeviceSubgroupProperties pro1={
+        //         .sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_PROPERTIES,
+        //     };
+        //     VkPhysicalDeviceProperties2 pro={
+        //         .sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+        //         .pNext=&pro1
+        //     };
+        //     vkGetPhysicalDeviceProperties2(physical_device,&pro);
+        //     vkGetPhysicalDeviceProperties2(physical_device,&pro);
+        // }
     }
 
     void init_surface(u64 handle,u32 width,u32 height){

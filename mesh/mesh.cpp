@@ -6,8 +6,10 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
+#include <assert.h>
+
+// #define TINYOBJLOADER_IMPLEMENTATION
+// #include <tiny_obj_loader.h>
 
 using namespace std;
 

@@ -1,0 +1,6 @@
+target("mesh_simplify")
+    set_kind("static")
+    add_files("*.cpp")
+    add_deps("mesh")
+    add_includedirs(".",{public=true})
+target_end()

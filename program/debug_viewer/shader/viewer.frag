@@ -9,8 +9,9 @@ layout(location=0) out vec4 out_color;
 void main(){
     float t=1-min(min(coord.x,coord.y),coord.z);
     t=min(t,is_ext);
-    t=clamp(pow(t+0.1,50)+0.3,0,1);
+    t=clamp(pow(t+0.1,50)+0.2,0,1);
 
     vec3 c=mix(color,vec3(1),t);
     out_color=vec4(c,1);
+    // out_color=vec4(color,1);
 }

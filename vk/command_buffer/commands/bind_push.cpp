@@ -7,6 +7,10 @@ void bind_graphics_pipeline(u64 cmd,u64 pipeline){
     vkCmdBindPipeline((VkCommandBuffer)cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,(VkPipeline)pipeline);
 }
 
+void bind_compute_pipeline(u64 cmd,u64 pipeline){
+    vkCmdBindPipeline((VkCommandBuffer)cmd,VK_PIPELINE_BIND_POINT_COMPUTE,(VkPipeline)pipeline);
+}
+
 void bind_vertex_buffer(u64 cmd,vector<Buffer> buffers){
     vector<VkBuffer> vkbuffers;
     vector<u64> offsets;
@@ -29,7 +33,7 @@ void push_constant(u64 cmd,u64 layout,u32 size,void* p){
     vkCmdPushConstants(
         (VkCommandBuffer)cmd,
         (VkPipelineLayout)layout,
-        VK_SHADER_STAGE_ALL_GRAPHICS,
+        VK_SHADER_STAGE_ALL_GRAPHICS|VK_SHADER_STAGE_COMPUTE_BIT,
         0,
         size,
         p

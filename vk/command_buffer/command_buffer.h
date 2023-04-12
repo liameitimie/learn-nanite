@@ -56,6 +56,16 @@ struct CommandBuffer{
         return *this;
     }
 
+    auto draw_indirect(Buffer buffer)->CommandBuffer{
+        vk::draw_indirect(handle,buffer);
+        return *this;
+    }
+
+    auto dispatch(u32 x,u32 y,u32 z)->CommandBuffer{
+        vk::dispatch(handle,x,y,z);
+        return *this;
+    }
+
     auto begin_rendering(
         RenderingInfo rendering_info
     )->CommandBuffer{
@@ -70,6 +80,11 @@ struct CommandBuffer{
 
     auto bind_graphics_pipeline(u64 pipeline_handle)->CommandBuffer{
         vk::bind_graphics_pipeline(handle,pipeline_handle);
+        return *this;
+    }
+
+    auto bind_compute_pipeline(u64 pipeline_handle)->CommandBuffer{
+        vk::bind_compute_pipeline(handle,pipeline_handle);
         return *this;
     }
 

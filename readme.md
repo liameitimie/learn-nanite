@@ -36,3 +36,25 @@ j,k切换显示模式(triangle id、cluster id、group id)
 u,i切换mip_level
 
 长按b显示鼠标、移动鼠标转换镜头
+
+## upd 2023-4-13
+
+#### lod_viewer
+
+ 通过计算着色器使用屏幕空间误差选择需要渲染的cluster，并填写indirect buffer间接绘制，以减少cpu与gpu间的同步与通信，实现运行时lod选择
+
+w,a,s,d移动，j,k切换显示模式(triangle id、cluster id、group id、mip level)，长按b键显示鼠标
+
+![image](picture/lod_viewer1.png)
+
+![image](picture/lod_viewer2.png)
+
+ 
+
+#### debug viewer
+
+w,a,s,d移动，j,k切换显示模式(triangle id、cluster id、group id)
+
+u,i切换mip_level，L显示cluster边界
+
+![image](picture/debug_viewer.png)

@@ -55,4 +55,11 @@ void Buffer::update(void* p,u64 size){
     vmaUnmapMemory((VmaAllocator)allocator(),(VmaAllocation)allocation);
 }
 
+void read_from_buffer(void* p,Buffer buffer,u64 size){
+    void* data;
+    vmaMapMemory((VmaAllocator)allocator(),(VmaAllocation)buffer.allocation,&data);
+    memcpy(p,data,size);
+    vmaUnmapMemory((VmaAllocator)allocator(),(VmaAllocation)buffer.allocation);
+}
+
 }

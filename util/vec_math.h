@@ -154,6 +154,10 @@ inline f32 length(vec3 a){
     return sqrt(a.x*a.x+a.y*a.y+a.z*a.z);
 }
 
+inline f32 length2(vec3 a){
+    return a.x*a.x+a.y*a.y+a.z*a.z;
+}
+
 inline vec3 normalize(vec3 a){
     f32 rl=1/sqrt(a.x*a.x+a.y*a.y+a.z*a.z);
     return a*rl;

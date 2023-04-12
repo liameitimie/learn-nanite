@@ -6,7 +6,7 @@
 
 namespace vk{
 
-auto proc_shader_info(
+inline auto proc_shader_info(
     ShaderModule shader,
     VkShaderStageFlagBits shader_stage
 )->VkPipelineShaderStageCreateInfo{
@@ -155,7 +155,7 @@ auto proc_depthstencil_desc(
 auto proc_bindless_layout(u32 push_constant_size)->VkPipelineLayout{
     VkPipelineLayout pipeline_layout;
     VkPushConstantRange push_desc={
-        .stageFlags=VK_SHADER_STAGE_ALL_GRAPHICS,
+        .stageFlags=VK_SHADER_STAGE_ALL_GRAPHICS|VK_SHADER_STAGE_COMPUTE_BIT,
         .offset=0,
         .size=push_constant_size,
     };
