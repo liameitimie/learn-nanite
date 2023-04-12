@@ -13,7 +13,7 @@ void write_bindless_set(u32 idx,Buffer buffer,DescriptorType type){
     VkWriteDescriptorSet write_desc={
         .sType=VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dstSet=(VkDescriptorSet)bindless_set(),
-        .dstBinding=idx,
+        .dstArrayElement=idx,
         .descriptorCount=1,
         .descriptorType=(VkDescriptorType)type,
         .pBufferInfo=&buffer_info
