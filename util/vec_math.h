@@ -116,6 +116,10 @@ inline bool invert(dmat4 m,dmat4& inv){
     return invertColumnMajor((f64*)&m,(f64*)&inv);
 }
 
+inline vec2 operator*(vec2 a,f32 b){
+    return vec2{a.x*b,a.y*b};
+}
+
 inline vec3 operator*(vec3 a,f32 b){
     return vec3{a.x*b,a.y*b,a.z*b};
 }

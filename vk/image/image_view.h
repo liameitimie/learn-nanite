@@ -3,11 +3,20 @@
 
 namespace vk{
 
+struct ImageViewDesc{
+    Format format;
+    u32 mip_level;
+    u32 level_count;
+};
+
+struct Image;
+
 struct ImageView{
     u64 handle;
-    u64 image;
-    ImageDimensions dimensions;
+    Image* image;
     Format format;
+    u32 mip_level;
+    u32 level_count;
 };
 
 }

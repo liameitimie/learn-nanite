@@ -88,8 +88,7 @@ int main(){
     vk::write_bindless_set(
         vk::num_swapchain_image(), //offset
         packed_clusters.data(),
-        packed_clusters.size(),
-        DescriptorType::StorageBuffer
+        packed_clusters.size()
     );
 
     struct FrameContext{
@@ -119,8 +118,7 @@ int main(){
     vk::write_bindless_set(
         0, //offset
         frame_context_buffers.data(),
-        frame_context_buffers.size(),
-        DescriptorType::StorageBuffer
+        frame_context_buffers.size()
     );
 
     auto depth_buffer=Image::AttachmentImage(
@@ -172,7 +170,7 @@ int main(){
             })
             .push_constant(pipeline.pipeline_layout,8,&id[swapchain_idx])
             .bind_graphics_pipeline(pipeline.handle)
-            .bind_descriptor_sets(PipelineBindPoint::Graphics,pipeline.pipeline_layout,vk::bindless_set())
+            .bind_descriptor_sets(PipelineBindPoint::Graphics,pipeline.pipeline_layout,0,vk::bindless_buffer_set())
             .draw(128*3,vm.clusters.size(),0,0)
             .end_rendering()
             .pipeline_barrier(Dependency{

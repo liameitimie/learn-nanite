@@ -77,10 +77,10 @@ struct Camera{
         // assuming n=-0.1, f=-inf
         f32 t=1/tan(fov*0.5);
         mat4 mat;
-        mat.set_col(0,vec4(-t/aspect,0,0,0));
-        mat.set_col(1,vec4(0,t,0,0));
-        mat.set_col(2,vec4(0,0,0,1));
-        mat.set_col(3,vec4(0,0,-0.1,0));
+        mat.set_col(0,vec4(t/aspect,0,0,0));
+        mat.set_col(1,vec4(0,-t,0,0));
+        mat.set_col(2,vec4(0,0,0,-1));
+        mat.set_col(3,vec4(0,0,0.1,0));
         return mat;
     }
 };

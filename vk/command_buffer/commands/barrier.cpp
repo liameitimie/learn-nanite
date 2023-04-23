@@ -9,7 +9,7 @@ namespace vk{
 void pipeline_barrier(u64 cmd,Dependency dependency){
     vector<VkImageMemoryBarrier2> image_barriers;
     for(auto barrier:dependency.image_barriers){
-        image_barriers.push_back(VkImageMemoryBarrier2{
+        VkImageMemoryBarrier2 vk_barrier{
             .sType=VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .srcStageMask=(VkPipelineStageFlags2)barrier.src_stage,
             .srcAccessMask=(VkAccessFlags2)barrier.src_access,
@@ -20,10 +20,16 @@ void pipeline_barrier(u64 cmd,Dependency dependency){
             .image=(VkImage)barrier.image.handle,
             .subresourceRange={
                 .aspectMask=(VkImageAspectFlags)aspect(barrier.image.format),
-                .levelCount=1,
+                .levelCount=barrier.image.mip_levels,
                 .layerCount=1,
             }
-        });
+        };
+        if(barrier.sub_range.is_some()){
+            auto sub_range=barrier.sub_range.unwrap();
+            vk_barrier.subresourceRange.baseMipLevel=sub_range.base_mip_level;
+            vk_barrier.subresourceRange.levelCount=sub_range.level_count;
+        }
+        image_barriers.push_back(vk_barrier);
     }
 
     vector<VkBufferMemoryBarrier2> buffer_barriers;

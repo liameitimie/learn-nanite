@@ -1,5 +1,6 @@
 #include "graphics.h"
 #include <utility>
+#include <vector>
 #include <vulkan/vulkan.h>
 #include "../vk_context.h"
 #include <vk_check.h>
@@ -140,6 +141,16 @@ auto proc_depthstencil_desc(
     return depthstencil_desc;
 }
 
+auto proc_dynamic_state_desc(
+    vector<DynamicState>& dynamic_state
+)->vector<VkDynamicState>{
+    vector<VkDynamicState> s;
+    for(auto state:dynamic_state){
+        s.push_back(VkDynamicState(state));
+    }
+    return s;
+}
+
 // auto proc_rendering_desc(
 //     RenderingCreateInfo render_pass
 // )->VkPipelineRenderingCreateInfo{
@@ -159,11 +170,14 @@ auto proc_bindless_layout(u32 push_constant_size)->VkPipelineLayout{
         .offset=0,
         .size=push_constant_size,
     };
-    u64 layout=bindless_layout();
+    VkDescriptorSetLayout layouts[2]={
+        VkDescriptorSetLayout(bindless_buffer_layout()),
+        VkDescriptorSetLayout(bindless_image_layout())
+    };
     auto layout_desc=VkPipelineLayoutCreateInfo{
         .sType=VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount=1,
-        .pSetLayouts=(VkDescriptorSetLayout*)&layout,
+        .setLayoutCount=2,
+        .pSetLayouts=layouts,
         .pushConstantRangeCount=push_constant_size?1u:0,
         .pPushConstantRanges=push_constant_size?&push_desc:nullptr,
     };
@@ -212,6 +226,13 @@ auto GraphicsPipeline::build()->Result<GraphicsPipeline,Error>{
         .stencilAttachmentFormat=(VkFormat)render_pass_.stencil_attachment_format
     };
 
+    auto dynamic_states=proc_dynamic_state_desc(dynamic_state_);
+    auto dynamic_state_desc=VkPipelineDynamicStateCreateInfo{
+        .sType=VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .dynamicStateCount=(u32)dynamic_states.size(),
+        .pDynamicStates=dynamic_states.data(),
+    };
+
     auto pipeline_desc=VkGraphicsPipelineCreateInfo{
         .sType=VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .pNext=&rendering_desc,
@@ -224,6 +245,7 @@ auto GraphicsPipeline::build()->Result<GraphicsPipeline,Error>{
         .pMultisampleState=&multsamping_desc,
         .pDepthStencilState=&depthstencil_desc,
         .pColorBlendState=&color_blend_desc,
+        .pDynamicState=&dynamic_state_desc,
         .layout=pipeline_layout
     };
     VkPipeline pipeline;

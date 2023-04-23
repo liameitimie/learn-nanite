@@ -143,8 +143,9 @@ void main(){
 
     vec3 p=get_position(cluster,index);
 
-    vec4 pos=context.vp_mat*vec4(p,1);
-	pos=pos/pos.w;
-	if(pos.z<0||pos.z>1) pos.z=0/0;
-	gl_Position=pos;
+    // vec4 pos=context.vp_mat*vec4(p,1);
+	// pos=pos/pos.w;
+	// if(pos.z<0||pos.z>1) pos.z=0/0;
+	// gl_Position=pos;
+	gl_Position=context.vp_mat*vec4(p,1);
 }

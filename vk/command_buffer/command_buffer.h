@@ -8,6 +8,7 @@
 #include "commands/bind_push.h"
 #include "commands/barrier.h"
 #include "command_buffer_allocator.h"
+#include "commands/set_state.h"
 
 namespace vk{
 
@@ -108,10 +109,17 @@ struct CommandBuffer{
         return *this;
     }
 
-    auto bind_descriptor_sets(PipelineBindPoint binding_point,u64 layout,u64 desc_set)->CommandBuffer{
-        vk::bind_descriptor_sets(handle,binding_point,layout,desc_set);
+    auto bind_descriptor_sets(PipelineBindPoint binding_point,u64 layout,u32 idx,u64 desc_set)->CommandBuffer{
+        vk::bind_descriptor_sets(handle,binding_point,layout,idx,desc_set);
         return *this;
     }
+
+    auto set_viewport(std::vector<Viewport> viewports)->CommandBuffer{
+        vk::set_viewport(handle,viewports);
+        return *this;
+    }
+
+    auto blit_image(Image img1,Image img2,ivec4 img1_range,ivec4 img2_range)->CommandBuffer;
 };
 
 

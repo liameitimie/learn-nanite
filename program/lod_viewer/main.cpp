@@ -8,6 +8,7 @@
 #include <timer.h>
 #include <assert.h>
 #include <fmt/os.h>
+#include <co/fs.h>
 
 using namespace fmt;
 using namespace vk;
@@ -20,8 +21,10 @@ u32 as_uint(f32 x){
     return *((u32*)&x);
 };
 
-Buffer packing_virtual_mesh(const VirtualMesh& vm){
-    vector<u32> packed_data;
+void packing_virtual_mesh(const VirtualMesh& vm,vector<u32>& packed_data){
+    // vector<u32> packed_data;
+    packed_data.clear();
+
     packed_data.push_back(vm.clusters.size()); //num cluster
     packed_data.push_back(0);
     packed_data.push_back(0);
@@ -71,18 +74,18 @@ Buffer packing_virtual_mesh(const VirtualMesh& vm){
         }
         i++;
     }
-    print("packed data size: {} bytes\n",packed_data.size()*4);
+    // print("packed data size: {} bytes\n",packed_data.size()*4);
 
-    auto packed_buffer=Buffer::from_iter(
-        BufferAllocateInfo{
-            .buffer_usage=vk::BufferUsage::StorageBuffer,
-            .memory_usage=vk::MemoryUsage::Upload
-        },
-        packed_data
-    )
-    .unwrap();
+    // auto packed_buffer=Buffer::from_iter(
+    //     BufferAllocateInfo{
+    //         .buffer_usage=vk::BufferUsage::StorageBuffer,
+    //         .memory_usage=vk::MemoryUsage::Upload
+    //     },
+    //     packed_data
+    // )
+    // .unwrap();
 
-    return packed_buffer;
+    // return packed_buffer;
 }
 
 struct ConstContext{
@@ -98,6 +101,10 @@ struct FrameContext{
 int main(){
     Timer timer;
 
+    u32 num_clusters=0;
+    vector<u32> packed_data;
+
+#if 0
     timer.reset();
     print("loading mesh: ");
     Mesh mesh;
@@ -107,12 +114,49 @@ int main(){
     VirtualMesh vm;
     vm.build(mesh);
 
+    timer.reset();
+    print("packing virtual mesh: ");
+    packing_virtual_mesh(vm,packed_data);
+    print("size: {} bytes, ",packed_data.size()*4);
+    print("time: {} us\n",timer.us());
+
+    timer.reset();
+    print("writting packed data: ");
+    fs::file file("packed_data.txt",'w');
+    file.write(packed_data.data(),packed_data.size()*sizeof(u32));
+    print("{} us\n",timer.us());
+
+    return 0;
+#else
+    fs::file file("packed_data.txt",'r');
+    if(!file){
+        print("failed: packed_data.txt file invaild");
+        return 0;
+    }
+    packed_data.resize(file.size()/sizeof(u32));
+
+    timer.reset();
+    print("loading packed data: ");
+    file.read(packed_data.data(),file.size());
+    print("{} us\n",timer.us());
+
+    num_clusters=packed_data[0];
+#endif
+
     vk::init();
     Window window=Window::create(width,height,"virtual mesh viewer");
     window.build_vk_surface(vk::instance());
     vk::init_surface(window.surface,window.width,window.height);
 
-    Buffer pack_buffer=packing_virtual_mesh(vm);
+    // Buffer pack_buffer=packing_virtual_mesh(vm);
+    auto packed_buffer=Buffer::from_iter(
+        BufferAllocateInfo{
+            .buffer_usage=vk::BufferUsage::StorageBuffer,
+            .memory_usage=vk::MemoryUsage::Upload
+        },
+        packed_data
+    )
+    .unwrap();
 
     vector<ConstContext> const_contexts={{vk::num_swapchain_image()}};
     Buffer const_context_buffer=Buffer::from_iter(
@@ -168,31 +212,26 @@ int main(){
 
     vk::write_bindless_set(
         0,
-        const_context_buffer,
-        DescriptorType::StorageBuffer
+        const_context_buffer
     );
     vk::write_bindless_set(
         1,
         indirect_buffer.data(),
-        indirect_buffer.size(),
-        DescriptorType::StorageBuffer
+        indirect_buffer.size()
     );
     vk::write_bindless_set(
         1+vk::num_swapchain_image(),
         visiable_clusters_buffer.data(),
-        visiable_clusters_buffer.size(),
-        DescriptorType::StorageBuffer
+        visiable_clusters_buffer.size()
     );
     vk::write_bindless_set(
         1+2*vk::num_swapchain_image(),
         frame_context_buffers.data(),
-        frame_context_buffers.size(),
-        DescriptorType::StorageBuffer
+        frame_context_buffers.size()
     );
     vk::write_bindless_set(
         1+3*vk::num_swapchain_image(),
-        pack_buffer,
-        DescriptorType::StorageBuffer
+        packed_buffer
     );
 
     auto g_ppl=GraphicsPipeline::new_()
@@ -228,7 +267,7 @@ int main(){
     for(auto& cmd:cmds){
         cmd=CommandBuffer::new_(cmd_allocator).unwrap()
             .begin(CommandBufferUsage::SimultaneousUse).unwrap()
-            .bind_descriptor_sets(PipelineBindPoint::Compute,c_ppl.pipeline_layout,vk::bindless_set())
+            .bind_descriptor_sets(PipelineBindPoint::Compute,c_ppl.pipeline_layout,0,vk::bindless_buffer_set())
             .push_constant(c_ppl.pipeline_layout,4,&id[swapchain_idx])
             .pipeline_barrier(Dependency{
                 .buffer_barriers={BufferBarrier{
@@ -238,7 +277,7 @@ int main(){
                 }}
             })
             .bind_compute_pipeline(c_ppl.handle)
-            .dispatch(vm.clusters.size()/32+1,1,1)
+            .dispatch(num_clusters/32+1,1,1)
             .pipeline_barrier(Dependency{
                 .buffer_barriers={BufferBarrier{
                     .buffer=indirect_buffer[swapchain_idx],
@@ -263,7 +302,7 @@ int main(){
                     .load_op=LoadOp::Clear,
                 })
             })
-            .bind_descriptor_sets(PipelineBindPoint::Graphics,c_ppl.pipeline_layout,vk::bindless_set())
+            .bind_descriptor_sets(PipelineBindPoint::Graphics,g_ppl.pipeline_layout,0,vk::bindless_buffer_set())
             .bind_graphics_pipeline(g_ppl.handle)
             .draw_indirect(indirect_buffer[swapchain_idx])
             .end_rendering()
@@ -357,6 +396,7 @@ int main(){
 
         frame_idx=(frame_idx+1)%3;
         frame_cnt++;
+        // break;
     }
 
     vk::cleanup();

@@ -28,8 +28,21 @@ struct Image{
     ImageDimensions dimensions;
     Format format;
     u32 usage;
+    u32 mip_levels;
+
+    Result<ImageView,Error> view(ImageViewDesc view_desc);
 
     static Result<Image,Error> AttachmentImage(u32 width,u32 height,Format format,u32 usage);
 };
+
+struct ImageDesc2D{
+    u32 width;
+    u32 height;
+    Format format;
+    u32 usage;
+    u32 mip_levels;
+};
+
+Result<Image,Error> create_image2d(ImageDesc2D image_desc);
 
 }

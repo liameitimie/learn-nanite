@@ -2,12 +2,13 @@
 #include "../../image/image.h"
 #include "../../image/layout.h"
 #include "../../buffer/buffer.h"
+#include <option.h>
 #include <vector>
 
 namespace vk{
 
-enum class AccessFlag {
-    INDIRECT_COMMAND_READ = 0x00000001,
+struct AccessFlag {
+    static const u32 INDIRECT_COMMAND_READ = 0x00000001,
     INDEX_READ = 0x00000002,
     VERTEX_ATTRIBUTE_READ = 0x00000004,
     UNIFORM_READ = 0x00000008,
@@ -35,7 +36,7 @@ enum class AccessFlag {
     FRAGMENT_DENSITY_MAP_READ_EXT = 0x01000000,
     FRAGMENT_SHADING_RATE_ATTACHMENT_READ_KHR = 0x00800000,
     COMMAND_PREPROCESS_READ_NV = 0x00020000,
-    COMMAND_PREPROCESS_WRITE_NV = 0x00040000,
+    COMMAND_PREPROCESS_WRITE_NV = 0x00040000;
 };
 
 struct PipelineStage {
@@ -68,22 +69,28 @@ struct PipelineStage {
     MESH_SHADER_EXT = 0x00100000;
 };
 
+struct ImageSubRange{
+    u32 base_mip_level;
+    u32 level_count;
+};
+
 struct ImageBarrier{
     Image image;
     u32 src_stage;
-    AccessFlag src_access;
+    u32 src_access;
     u32 dst_stage;
-    AccessFlag dst_access;
+    u32 dst_access;
     ImageLayout old_layout;
     ImageLayout new_layout;
+    Option<ImageSubRange> sub_range;
 };
 
 struct BufferBarrier{
     Buffer buffer;
     u32 src_stage;
-    AccessFlag src_access;
+    u32 src_access;
     u32 dst_stage;
-    AccessFlag dst_access;
+    u32 dst_access;
 };
 
 struct Dependency{

@@ -29,6 +29,15 @@ struct DepthStencilState{
         };
     }
 
+    static auto always()->DepthStencilState{
+        return DepthStencilState{
+            .depth=Some(DepthState{
+                .write_enable=true,
+                .compare_op=CompareOp::Always
+            })
+        };
+    }
+
     static auto simple_depth_test()->DepthStencilState{
         return DepthStencilState{
             .depth=Some(DepthState{

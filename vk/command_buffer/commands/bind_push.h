@@ -16,6 +16,6 @@ void bind_index_buffer(u64 cmd,Buffer index_buffer);
 
 void push_constant(u64 cmd,u64 layout,u32 size,void* p);
 
-void bind_descriptor_sets(u64 cmd,PipelineBindPoint binding_point,u64 layout,u64 desc_set);
+void bind_descriptor_sets(u64 cmd,PipelineBindPoint binding_point,u64 layout,u32 idx,u64 desc_set);
 
 }

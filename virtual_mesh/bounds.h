@@ -5,7 +5,7 @@
 
 struct Bounds{
     vec3 pmin,pmax;
-    Bounds(){}
+    Bounds(){pmin={1e9,1e9,1e9},pmax={-1e9,-1e9,-1e9};}
     Bounds(vec3 p){pmin=p,pmax=p;}
     Bounds operator+(Bounds b);
     Bounds operator+(vec3 b);

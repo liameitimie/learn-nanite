@@ -22,8 +22,13 @@ u32 num_swapchain_image();
 Format swapchain_image_format();
 Image swapchain_image(u32 idx);
 
-u64 bindless_layout();
-u64 bindless_set();
+u64 bindless_buffer_layout();
+u64 bindless_buffer_set();
+
+u64 bindless_image_layout();
+u64 bindless_image_set();
+
+// u64 default_sampler();
 
 void cleanup();
 

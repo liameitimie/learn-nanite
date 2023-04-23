@@ -1,12 +1,7 @@
-#include <cstddef>
 #include <vulkan/vulkan.h>
 #include "vk_context.h"
 #include <vk_check.h>
 #include <vector>
-
-#define GLFW_INCLUDE_VULKAN
-#include "GLFW/glfw3.h"
-
 #include <result.h>
 #include "error.h"
 #include "image/image.h"
@@ -25,8 +20,12 @@ namespace context{
     u32 queue_family;
 
     VkDescriptorPool descriptor_pool;
-    VkDescriptorSet bindless_set;
-    VkDescriptorSetLayout bindless_layout;
+    VkDescriptorSet bindless_buffer_set;
+    VkDescriptorSet bindless_image_set;
+    VkDescriptorSetLayout bindless_buffer_layout;
+    VkDescriptorSetLayout bindless_image_layout;
+
+    // VkSampler sampler;
 
     VkSurfaceKHR surface;
     VkSwapchainKHR swapchain;
@@ -36,6 +35,122 @@ namespace context{
 
     vector<Image> swapchain_images;
     u32 num_swapchain_images;
+
+    // void create_default_sampler(){
+    //     VkSamplerCreateInfo sampler_desc{
+    //         .sType=VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+    //         .addressModeU=VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+    //         .addressModeV=VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+    //         .addressModeW=VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+    //         // .maxLod=VK_LOD_CLAMP_NONE,
+    //         .unnormalizedCoordinates=VK_TRUE
+    //     };
+    //     VK_CHECK(vkCreateSampler(device,&sampler_desc,nullptr,&sampler));
+    // }
+
+    void create_bindless_buffer_layout(){
+        VkDescriptorSetLayoutBinding binding={
+            .binding=0,
+            .descriptorType=VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .descriptorCount=(1<<20),
+            .stageFlags=VK_SHADER_STAGE_ALL
+        };
+        VkDescriptorBindingFlags flag=VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT
+                                        | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
+        VkDescriptorSetLayoutBindingFlagsCreateInfo binding_flag={
+            .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+            .bindingCount=1,
+            .pBindingFlags=&flag
+        };
+        VkDescriptorSetLayoutCreateInfo set_layout_desc={
+            .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .pNext=&binding_flag,
+            .bindingCount=1,
+            .pBindings=&binding,
+        };
+        VK_CHECK(vkCreateDescriptorSetLayout(device,&set_layout_desc,nullptr,&bindless_buffer_layout));
+    }
+
+    void create_bindless_image_layout(){
+        VkDescriptorSetLayoutBinding binding={
+            .binding=0,
+            .descriptorType=VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount=(1<<20),
+            .stageFlags=VK_SHADER_STAGE_ALL
+        };
+        VkDescriptorBindingFlags flag=VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT
+                                        | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
+        VkDescriptorSetLayoutBindingFlagsCreateInfo binding_flag={
+            .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+            .bindingCount=1,
+            .pBindingFlags=&flag
+        };
+        VkDescriptorSetLayoutCreateInfo set_layout_desc={
+            .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .pNext=&binding_flag,
+            .bindingCount=1,
+            .pBindings=&binding,
+        };
+        VK_CHECK(vkCreateDescriptorSetLayout(device,&set_layout_desc,nullptr,&bindless_image_layout));
+    }
+
+    void create_bindless_buffer_set(){
+        VkDescriptorPoolSize pool_size={
+            .type=VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .descriptorCount=(1<<20)
+        };
+        VkDescriptorPoolCreateInfo desc_pool_info={
+            .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .maxSets=1,
+            .poolSizeCount=1,
+            .pPoolSizes=&pool_size,
+        };
+        VK_CHECK(vkCreateDescriptorPool(device,&desc_pool_info,nullptr,&descriptor_pool));
+
+        u32 num=(1<<20);
+        VkDescriptorSetVariableDescriptorCountAllocateInfo desc_set_ext={
+            .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO,
+            .descriptorSetCount=1,
+            .pDescriptorCounts=&num
+        };
+        VkDescriptorSetAllocateInfo desc_set_info={
+            .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .pNext=&desc_set_ext,
+            .descriptorPool=descriptor_pool,
+            .descriptorSetCount=1,
+            .pSetLayouts=&bindless_buffer_layout
+        };
+        VK_CHECK(vkAllocateDescriptorSets(device,&desc_set_info,&bindless_buffer_set));
+    }
+
+    void create_bindless_image_set(){
+        VkDescriptorPoolSize pool_size={
+            .type=VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount=(1<<20)
+        };
+        VkDescriptorPoolCreateInfo desc_pool_info={
+            .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .maxSets=1,
+            .poolSizeCount=1,
+            .pPoolSizes=&pool_size,
+        };
+        VK_CHECK(vkCreateDescriptorPool(device,&desc_pool_info,nullptr,&descriptor_pool));
+
+        u32 num=(1<<20);
+        VkDescriptorSetVariableDescriptorCountAllocateInfo desc_set_ext={
+            .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO,
+            .descriptorSetCount=1,
+            .pDescriptorCounts=&num
+        };
+        VkDescriptorSetAllocateInfo desc_set_info={
+            .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .pNext=&desc_set_ext,
+            .descriptorPool=descriptor_pool,
+            .descriptorSetCount=1,
+            .pSetLayouts=&bindless_image_layout
+        };
+        VK_CHECK(vkAllocateDescriptorSets(device,&desc_set_info,&bindless_image_set));
+    }
 
     void init(){
         u32 ins_ext_cnt=2;
@@ -140,53 +255,13 @@ namespace context{
             VK_CHECK(vmaCreateAllocator(&allocator_desc,&alloctor));
         }
         {
-            VkDescriptorSetLayoutBinding binding={
-                .binding=0,
-                .descriptorType=VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .descriptorCount=(1<<20),
-                .stageFlags=VK_SHADER_STAGE_ALL
-            };
-            VkDescriptorBindingFlags flags=VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT
-                                            | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
-            VkDescriptorSetLayoutBindingFlagsCreateInfo binding_flag={
-                .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
-                .bindingCount=1,
-                .pBindingFlags=&flags
-            };
-            VkDescriptorSetLayoutCreateInfo set_layout_desc={
-                .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-                .pNext=&binding_flag,
-                .bindingCount=1,
-                .pBindings=&binding,
-            };
-            VK_CHECK(vkCreateDescriptorSetLayout(device,&set_layout_desc,nullptr,&bindless_layout));
+            create_bindless_buffer_layout();
+            create_bindless_image_layout();
 
-            VkDescriptorPoolSize pool_size={
-                .type=VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .descriptorCount=(1<<20)
-            };
-            VkDescriptorPoolCreateInfo desc_pool_info={
-                .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-                .maxSets=1,
-                .poolSizeCount=1,
-                .pPoolSizes=&pool_size,
-            };
-            VK_CHECK(vkCreateDescriptorPool(device,&desc_pool_info,nullptr,&descriptor_pool));
+            create_bindless_buffer_set();
+            create_bindless_image_set();
 
-            u32 num=(1<<20);
-            VkDescriptorSetVariableDescriptorCountAllocateInfo desc_set_ext={
-                .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO,
-                .descriptorSetCount=1,
-                .pDescriptorCounts=&num
-            };
-            VkDescriptorSetAllocateInfo desc_set_info={
-                .sType=VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                .pNext=&desc_set_ext,
-                .descriptorPool=descriptor_pool,
-                .descriptorSetCount=1,
-                .pSetLayouts=&bindless_layout
-            };
-            VK_CHECK(vkAllocateDescriptorSets(device,&desc_set_info,&bindless_set));
+            // create_default_sampler();
         }
         // {
         //     VkPhysicalDeviceSubgroupProperties pro1={
@@ -212,7 +287,7 @@ namespace context{
                 .imageFormat=swapchain_format,
                 .imageExtent={width,height},
                 .imageArrayLayers=1,
-                .imageUsage=VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                .imageUsage=VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT,
                 .preTransform=VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
                 .compositeAlpha=VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
                 .presentMode=VK_PRESENT_MODE_MAILBOX_KHR
@@ -235,6 +310,8 @@ namespace context{
                     .width=width,
                     .height=height
                 };
+                swapchain_images[i].usage=ImageUsage::ColorAttachment;
+                swapchain_images[i].mip_levels=1;
                 VkImageViewCreateInfo imgv_desc={
                     .sType=VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
                     .image=vk_swapchain_images[i],
@@ -268,8 +345,14 @@ Image swapchain_image(u32 idx){return context::swapchain_images[idx];}
 Format swapchain_image_format(){return context::swapchain_images[0].format;}
 u32 num_swapchain_image(){return context::num_swapchain_images;/*context::swapchain_images.size();*/}
 
-u64 bindless_layout(){return (u64)context::bindless_layout;}
-u64 bindless_set(){return (u64)context::bindless_set;}
+
+u64 bindless_buffer_layout(){return (u64)context::bindless_buffer_layout;}
+u64 bindless_buffer_set(){return (u64)context::bindless_buffer_set;}
+
+u64 bindless_image_layout(){return (u64)context::bindless_image_layout;}
+u64 bindless_image_set(){return (u64)context::bindless_image_set;}
+
+// u64 default_sampler(){return (u64)context::sampler;}
 
 void cleanup(){
     vkDeviceWaitIdle((VkDevice)device());

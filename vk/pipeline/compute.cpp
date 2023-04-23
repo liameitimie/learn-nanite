@@ -12,11 +12,14 @@ auto ComputePipeline::build()->Result<ComputePipeline,Error>{
         .offset=0,
         .size=push_constant_size_,
     };
-    u64 layout=bindless_layout();
+    VkDescriptorSetLayout layouts[2]={
+        VkDescriptorSetLayout(bindless_buffer_layout()),
+        VkDescriptorSetLayout(bindless_image_layout())
+    };
     auto layout_desc=VkPipelineLayoutCreateInfo{
         .sType=VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .setLayoutCount=1,
-        .pSetLayouts=(VkDescriptorSetLayout*)&layout,
+        .setLayoutCount=2,
+        .pSetLayouts=layouts,
         .pushConstantRangeCount=push_constant_size_?1u:0,
         .pPushConstantRanges=push_constant_size_?&push_desc:nullptr,
     };

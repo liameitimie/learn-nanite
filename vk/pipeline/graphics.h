@@ -5,6 +5,7 @@
 #include "viewport.h"
 #include "rasterization.h"
 #include "depth_stencil.h"
+#include "dynamic_state.h"
 #include "../shader.h"
 #include "../error.h"
 #include <result.h>
@@ -26,6 +27,8 @@ struct GraphicsPipeline{
     ViewportState viewport_state_;
     RasterizationState rasterization_state_;
     DepthStencilState depth_stencil_state_;
+
+    vector<DynamicState> dynamic_state_;
 
     static auto new_()->GraphicsPipeline{
         return GraphicsPipeline{
@@ -107,6 +110,13 @@ struct GraphicsPipeline{
         DepthStencilState depth_stencil_state_
     )->GraphicsPipeline&{
         this->depth_stencil_state_=depth_stencil_state_;
+        return *this;
+    }
+
+    auto dynamic_state(
+        vector<DynamicState> dynamic_state_
+    )->GraphicsPipeline&{
+        this->dynamic_state_=dynamic_state_;
         return *this;
     }
 };
